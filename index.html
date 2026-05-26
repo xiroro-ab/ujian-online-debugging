@@ -4576,12 +4576,17 @@ function renderMonitoringRow(session, liveScore) {
     // Cek apakah statusnya Diskualifikasi
     const isDisqualified = session.status === 'DISQUALIFIED';
 
+    // JIKA DISKUALIFIKASI (MERAH)
     if (isDisqualified) {
         statusIcon = `<div class="tooltip" title="DISKUALIFIKASI"><i class="fas fa-times-circle text-2xl text-red-500 filter drop-shadow-[0_0_5px_rgba(239,68,68,0.8)] animate-pulse"></i></div>`;
-        rowClass += ' bg-red-900/20'; 
+        rowClass += ' bg-red-500/20'; // Saya buat merahnya sedikit lebih cerah agar jelas
+        
+    // JIKA KELUAR APLIKASI/TIDAK FOKUS (KUNING)
     } else if (!session.isFocus) {
         statusIcon = `<div class="tooltip" title="DI LUAR FOKUS"><i class="fas fa-exclamation-triangle text-xl text-yellow-500"></i></div>`;
-        rowClass += ' bg-yellow-900/10';
+        rowClass += ' bg-yellow-400/40'; // <-- INI SOLUSINYA: Kuningnya dibuat jauh lebih terang dan jelas
+        
+    // JIKA NORMAL/MENGERJAKAN (TIDAK ADA WARNA BACKGROUND)
     } else {
         statusIcon = `<div class="tooltip" title="MENGERJAKAN"><i class="fas fa-check-circle text-xl text-green-500"></i></div>`;
     }
