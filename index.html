@@ -4522,7 +4522,8 @@ function renderMonitoringTab() {
         // Hitung skornya dulu
         const liveScore = calculateGuruLiveScore(session.answers);
         // Baru render barisnya
-        renderMonitoringRow(session, liveScore); 
+        renderMonitoringRow(session, liveScore);
+        urutkanTabelMonitoring();
     });
 
     // 2. Saat data siswa BERUBAH
@@ -4532,6 +4533,7 @@ function renderMonitoringTab() {
         const liveScore = calculateGuruLiveScore(session.answers);
         // Render ulang barisnya
         renderMonitoringRow(session, liveScore);
+        urutkanTabelMonitoring();
     });
 
     // 3. Saat siswa SELESAI UJIAN
@@ -4583,8 +4585,9 @@ function renderMonitoringRow(session, liveScore) {
         
     // JIKA KELUAR APLIKASI/TIDAK FOKUS (KUNING)
     } else if (!session.isFocus) {
-        statusIcon = `<div class="tooltip" title="DI LUAR FOKUS"><i class="fas fa-exclamation-triangle text-xl text-yellow-500"></i></div>`;
-        rowClass += ' bg-yellow-400/40'; // <-- INI SOLUSINYA: Kuningnya dibuat jauh lebih terang dan jelas
+        // Saya tambahkan animate-pulse dan drop-shadow kuning agar berdenyut
+        statusIcon = `<div class="tooltip" title="DI LUAR FOKUS"><i class="fas fa-exclamation-triangle text-xl text-yellow-500 filter drop-shadow-[0_0_5px_rgba(234,179,8,0.8)] animate-pulse"></i></div>`;
+        rowClass += ' bg-yellow-400/40';
         
     // JIKA NORMAL/MENGERJAKAN (TIDAK ADA WARNA BACKGROUND)
     } else {
@@ -4979,6 +4982,39 @@ async function handleResetViolation(studentId, subjectId) {
             actionBtn.classList.add('bg-blue-600', 'hover:bg-blue-500', 'text-white', 'font-bold', 'py-2', 'px-6', 'rounded-lg', 'shadow-lg');
         }
     }, 50);
+}
+
+
+// FUNGSI BARU: Mengurutkan tabel berdasarkan Kelas lalu Nama
+function urutkanTabelMonitoring() {
+    const tableBody = document.getElementById('monitoring-table-body');
+    if (!tableBody) return;
+
+    // Ambil semua baris siswa di tabel
+    const barisSiswa = Array.from(tableBody.querySelectorAll('tr[id^="session-row-"]'));
+
+    // Proses mengurutkan
+    barisSiswa.sort((a, b) => {
+        // Ambil teks dari kolom Kelas (kolom ke-2)
+        let kelasA = a.cells[1].innerText.toLowerCase();
+        let kelasB = b.cells[1].innerText.toLowerCase();
+        
+        // Ambil teks dari kolom Nama (kolom ke-1)
+        let namaA = a.cells[0].innerText.toLowerCase();
+        let namaB = b.cells[0].innerText.toLowerCase();
+
+        // 1. Urutkan berdasarkan Kelas terlebih dahulu
+        if (kelasA < kelasB) return -1;
+        if (kelasA > kelasB) return 1;
+        
+        // 2. Jika Kelasnya SAMA, urutkan berdasarkan Nama Abjad (A-Z)
+        if (namaA < namaB) return -1;
+        if (namaA > namaB) return 1;
+        return 0;
+    });
+
+    // Susun ulang baris ke dalam tabel (otomatis memindahkan, bukan menggandakan)
+    barisSiswa.forEach(baris => tableBody.appendChild(baris));
 }
 
     </script>
