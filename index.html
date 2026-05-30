@@ -1035,6 +1035,7 @@ function renderStudentsTab() {
                 </select>
             </div>
             <button onclick="handleAddStudent()" class="neon-glow-button font-bold py-2 px-4 rounded-lg self-end sm:self-center"><i class="fas fa-plus mr-2"></i>Tambah Siswa</button>
+            <button onclick="handleBulkImportStudents()" class="neon-glow-button font-bold py-2 px-4 rounded-lg self-end sm:self-center bg-green-600/20 text-green-400 border border-green-500/50 hover:bg-green-600 hover:text-white"><i class="fas fa-file-excel mr-2"></i>Import (Copy-Paste Excel)</button>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-left">
@@ -1165,6 +1166,90 @@ async function handleDeleteStudent(studentId) {
         }
     }, { actionText: 'Hapus' });
 }
+
+// --- FUNGSI BARU: IMPORT MASSAL SISWA ---
+async function handleBulkImportStudents() {
+    const bodyHtml = `
+        <div class="space-y-4">
+            <p class="text-sm text-gray-300">
+                1. Buka Excel/Google Sheets Anda.<br>
+                2. Buat 2 kolom: <b>Kolom 1 (Nama)</b>, <b>Kolom 2 (Kelas)</b>.<br>
+                3. Blok baris data (tanpa judul kolom), lalu <b>Copy (Ctrl+C)</b>.<br>
+                4. Klik kotak di bawah ini, lalu <b>Paste (Ctrl+V)</b>.
+            </p>
+            <textarea id="bulkStudentData" class="w-full p-2 rounded-lg neon-glow-input h-48 font-mono text-sm placeholder-gray-500" placeholder="Paste data Excel Anda di sini...&#10;&#10;Contoh format yang akan terlihat:&#10;Budi Santoso&#9;7A&#10;Ani Wijaya&#9;7B" required></textarea>
+        </div>`;
+    
+    showModal('Import Massal Siswa', bodyHtml, async () => {
+        const rawData = $('#bulkStudentData').value.trim();
+        if (!rawData) {
+            showNotification('Peringatan', 'Kotak data masih kosong!', 'error');
+            return;
+        }
+
+        // Pisahkan data berdasarkan baris (Enter)
+        const rows = rawData.split('\n');
+        let successCount = 0;
+        let errorCount = 0;
+
+        showLoader();
+        
+        // Loop setiap baris yang di-paste
+        for (let i = 0; i < rows.length; i++) {
+            // Abaikan baris kosong
+            if (!rows[i].trim()) continue;
+
+            // Pisahkan kolom Nama dan Kelas berdasarkan 'Tab' (karakter pemisah asli Excel saat di-copy)
+            const columns = rows[i].split('\t');
+            
+            // Jika kolom kurang dari 2, coba pisahkan dengan koma (berjaga-jaga jika formatnya CSV)
+            const data = columns.length >= 2 ? columns : rows[i].split(',');
+
+            if (data.length >= 2) {
+                const studentName = data[0].trim();
+                const studentClass = data[1].trim();
+
+                if (studentName && studentClass) {
+                    const newStudentId = generateUniqueId();
+                    const newStudent = { 
+                        id: newStudentId, 
+                        name: studentName, 
+                        class: studentClass 
+                    };
+
+                    try {
+                        // Simpan ke Firebase
+                        await db.ref(`/students/${newStudentId}`).set(newStudent);
+                        // Update state lokal
+                        state.students.push(newStudent);
+                        successCount++;
+                    } catch (e) {
+                        console.error("Gagal simpan:", e);
+                        errorCount++;
+                    }
+                }
+            } else {
+                errorCount++; // Jika format kolom salah
+            }
+        }
+
+        hideLoader();
+        hideModal();
+        
+        // Render ulang UI
+        renderStudentsTab();
+        renderDashboardStats();
+        
+        // Tampilkan hasil
+        if (successCount > 0) {
+            showNotification('Selesai!', `Berhasil mengimpor ${successCount} siswa. (Gagal: ${errorCount})`, 'success');
+        } else {
+            showNotification('Gagal', 'Pastikan format Paste sudah benar (Nama [Tab] Kelas).', 'error');
+        }
+    });
+}
+
+
 function renderSubjectsTab() {
     $('#dashboard-content').innerHTML = `
         <div class="flex justify-end items-center mb-4">
